@@ -1,0 +1,206 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CHILD
+  PARENT
+  EDUCATOR
+  ADMIN
+}
+
+enum MediaType {
+  LIP_READING_VIDEO
+  CONCEPT_IMAGE
+  SIGN_LANGUAGE_VIDEO
+}
+
+enum LanguageCode {
+  EN
+  TA
+  HI
+}
+
+enum LessonStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model User {
+  id             String   @id @default(uuid())
+  authProviderId String   @unique
+  email          String   @unique
+  name           String
+  role           UserRole @default(PARENT)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  childProfiles  ChildProfile[]
+  guardianOf     GuardianRelationship[] @relation("Guardian")
+}
+
+model ChildProfile {
+  id            String       @id @default(uuid())
+  name          String
+  avatarUrl     String?
+  dateOfBirth   DateTime?
+  preferredLang LanguageCode @default(EN)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  userId        String
+  user          User         @relation(fields: [userId], references: [id])
+  guardians     GuardianRelationship[]
+  progress      LessonProgress[]
+  panelTimeLogs PanelTimeLog[]
+  quizAttempts  QuizAttempt[]
+}
+
+model GuardianRelationship {
+  id               String       @id @default(uuid())
+  guardianId       String
+  childProfileId   String
+  relationshipType String
+
+  guardian         User         @relation("Guardian", fields: [guardianId], references: [id])
+  childProfile     ChildProfile @relation(fields: [childProfileId], references: [id])
+
+  @@unique([guardianId, childProfileId])
+}
+
+model Module {
+  id          String    @id @default(uuid())
+  slug        String    @unique
+  title       String
+  description String?
+  iconUrl     String?
+  orderIndex  Int       @default(0)
+  isPublished Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  subModules  SubModule[]
+}
+
+model SubModule {
+  id          String    @id @default(uuid())
+  slug        String    @unique
+  title       String
+  description String?
+  iconUrl     String?
+  orderIndex  Int       @default(0)
+  isPublished Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  moduleId    String
+  module      Module    @relation(fields: [moduleId], references: [id])
+  lessons     Lesson[]
+}
+
+model Lesson {
+  id          String    @id @default(uuid())
+  slug        String    @unique
+  wordText    String
+  orderIndex  Int       @default(0)
+  isPublished Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  subModuleId  String
+  subModule    SubModule @relation(fields: [subModuleId], references: [id])
+  media        LessonMedia[]
+  translations LessonTranslation[]
+  progress     LessonProgress[]
+  panelTimeLogs PanelTimeLog[]
+  quizAttempts  QuizAttempt[]
+}
+
+model MediaAsset {
+  id             String     @id @default(uuid())
+  s3Key          String     @unique
+  cdnUrl         String
+  mediaType      MediaType
+  mimeType       String
+  fileSizeBytes  BigInt?
+  durationSeconds Float?
+  widthPx        Int?
+  heightPx       Int?
+  altText        String?
+  language       LanguageCode @default(EN)
+  uploadedById   String?
+  createdAt      DateTime   @default(now())
+
+  lessonMedia    LessonMedia[]
+}
+
+model LessonMedia {
+  id           String       @id @default(uuid())
+  lessonId     String
+  mediaAssetId String
+  panelType    MediaType
+  language     LanguageCode @default(EN)
+
+  lesson       Lesson       @relation(fields: [lessonId], references: [id])
+  mediaAsset   MediaAsset   @relation(fields: [mediaAssetId], references: [id])
+
+  @@unique([lessonId, panelType, language])
+}
+
+model LessonProgress {
+  id              String       @id @default(uuid())
+  childProfileId  String
+  lessonId        String
+  status          LessonStatus @default(NOT_STARTED)
+  completedAt     DateTime?
+  totalViewTimeSec Int         @default(0)
+  viewCount       Int          @default(0)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  childProfile    ChildProfile @relation(fields: [childProfileId], references: [id])
+  lesson          Lesson       @relation(fields: [lessonId], references: [id])
+
+  @@unique([childProfileId, lessonId])
+}
+
+model PanelTimeLog {
+  id              String       @id @default(uuid())
+  childProfileId  String
+  lessonId        String
+  panelType       MediaType
+  durationSeconds Int
+  sessionDate     DateTime     @default(now())
+
+  childProfile    ChildProfile @relation(fields: [childProfileId], references: [id])
+  lesson          Lesson       @relation(fields: [lessonId], references: [id])
+}
+
+model QuizAttempt {
+  id              String       @id @default(uuid())
+  childProfileId  String
+  lessonId        String
+  score           Int
+  totalQuestions  Int
+  correctAnswers  Int
+  attemptedAt     DateTime     @default(now())
+
+  childProfile    ChildProfile @relation(fields: [childProfileId], references: [id])
+  lesson          Lesson       @relation(fields: [lessonId], references: [id])
+}
+
+model LessonTranslation {
+  id        String       @id @default(uuid())
+  lessonId  String
+  language  LanguageCode
+  wordText  String
+  createdAt DateTime     @default(now())
+
+  lesson    Lesson       @relation(fields: [lessonId], references: [id])
+
+  @@unique([lessonId, language])
+}
