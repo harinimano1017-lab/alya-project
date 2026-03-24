@@ -1,7 +1,7 @@
 # Lesson Content Manager — Design Spec
 **Date:** 2026-03-24
 **Feature:** `/educator/lessons` — VS Code-style file explorer + lesson panel editor
-**Status:** Approved
+**Status:** Approved (v2 — post spec-review)
 
 ---
 
@@ -33,10 +33,19 @@ Module         → top-level collapsible section (e.g. "Animals")
 
 ## 3. Page Architecture
 
+### Prerequisite: Fix educator layout ADMIN access
+**This must be done first.** `app/(dashboard)/educator/layout.tsx` currently redirects any role other than EDUCATOR. ADMIN users must also be allowed through:
+
+```ts
+// Before: if (session.user.role !== 'EDUCATOR') redirect('/')
+// After:
+if (session.user.role !== 'EDUCATOR' && session.user.role !== 'ADMIN') redirect('/')
+```
+
 ### Server Component
 `app/(dashboard)/educator/lessons/page.tsx`
-- Protected by existing educator layout (EDUCATOR/ADMIN only)
-- Fetches full tree via `GET /api/modules?all=true`
+- Protected by educator layout (EDUCATOR/ADMIN only, per fix above)
+- Calls `GET /api/modules?all=true` server-side (using `auth()` session — bypasses HTTP)
 - Passes initial tree data as props to `LessonManager`
 
 ### Root Client Component
@@ -56,7 +65,7 @@ Module         → top-level collapsible section (e.g. "Animals")
 
 ### `TreeNode.tsx`
 - Recursive — renders a Module, SubModule, or Lesson row
-- Props: `type: 'module' | 'submodule' | 'lesson'`, node data, depth, isSelected, isExpanded, isRenaming
+- Props: `type: 'module' | 'submodule' | 'lesson'`, `nodeData: TreeNodeData`, depth, isSelected, isExpanded, isRenaming
 - Expand/collapse toggle (chevron icon) for modules and submodules
 - Double-click name → enters inline rename mode (replaces text with focused `<input>`)
 - Right-click → fires `onContextMenu` with node reference and mouse position
@@ -72,7 +81,7 @@ Module         → top-level collapsible section (e.g. "Animals")
 
 ### `LessonEditor.tsx`
 - Shown when a lesson is selected; empty state otherwise
-- Fetches `GET /api/lessons/[id]` on lesson selection (by lesson DB id)
+- On lesson selection: fetches `GET /api/lessons/${lesson.slug}` — uses the lesson's **slug** (already in tree data), so the existing route (`where: { slug: id }`) requires no change
 - Shows lesson name as editable `<input>` at top
 - Language selector (EN / TA / HI) pill tabs
 - Renders four `<PanelCard>` sections: A, B, C, D
@@ -87,15 +96,16 @@ Module         → top-level collapsible section (e.g. "Animals")
 ### `ImagePanel.tsx` (Panel B)
 - If media exists: shows `<img>` with CDN URL
 - File picker button → on file select:
-  1. `POST /api/media/upload-url` with `{ subModuleSlug, lessonSlug, type: 'concept-image', lang, ext, mimeType }`
-  2. `PUT uploadUrl` with file body
-  3. `POST /api/media/confirm` with `{ s3Key, mediaType: 'CONCEPT_IMAGE', mimeType, lessonId, language }`
-  4. Update local lesson media state
-- Shows upload progress
+  1. `POST /api/media/upload-url` with `{ subModuleSlug, lessonSlug, type: 'concept-image', lang, ext, mimeType }` — these values come from the selected lesson's context in `LessonManager` state (the `TreeModule` type carries `module.slug` and `subModule.slug`)
+  2. `PUT uploadUrl` directly to R2 with the file as body
+  3. `POST /api/media/confirm` with `{ s3Key, mediaType: 'CONCEPT_IMAGE', mimeType, lessonId, language, widthPx?, heightPx? }`
+  4. Update local `lessonDetail` state with the new media asset
+- Shows upload progress bar
 
 ### `TextPanel.tsx` (Panel C)
-- Editable `<textarea>` pre-filled from `lesson.wordText` (or translation for non-EN)
-- Save button → `PATCH /api/lessons/[id]` with `{ wordText }` (EN) or creates/updates `LessonTranslation` (TA/HI)
+- Editable `<textarea>` pre-filled from `lesson.wordText`
+- Save button → `PATCH /api/lessons/[id]` with `{ wordText }`
+- **MVP scope**: EN only. When a non-EN language is active, this panel shows a "Translation editing coming soon" placeholder and the save button is disabled. No `LessonTranslation` writes in this version.
 
 ---
 
@@ -104,52 +114,71 @@ Module         → top-level collapsible section (e.g. "Animals")
 All state lives in `LessonManager` as React `useState`. No Zustand (page-local concerns).
 
 ```ts
-type TreeModule = Module & {
-  subModules: (SubModule & { lessons: Lesson[] })[]
-}
+// Shared data types (types.ts)
+type TreeNodeData =
+  | { type: 'module';    data: TreeModule }
+  | { type: 'submodule'; data: TreeSubModule; parent: TreeModule }
+  | { type: 'lesson';    data: Lesson; parent: TreeSubModule; grandparent: TreeModule }
 
-// Key state
+type TreeModule = Module & {
+  subModules: TreeSubModule[]
+}
+type TreeSubModule = SubModule & { lessons: Lesson[] }
+
+// LessonManager state
 modules: TreeModule[]
-expandedIds: Set<string>       // module + submodule IDs
-selectedLesson: { lesson: Lesson; subModule: SubModule; module: TreeModule } | null
-renamingId: string | null      // ID of node currently being renamed
-contextMenu: { node: TreeNode; x: number; y: number } | null
+expandedIds: Set<string>           // module + submodule IDs
+selectedLesson: {
+  lesson: Lesson
+  subModule: TreeSubModule
+  module: TreeModule
+} | null
+renamingId: string | null          // ID of node currently being renamed
+contextMenu: { node: TreeNodeData; x: number; y: number } | null
 activeLanguage: 'EN' | 'TA' | 'HI'
 lessonDetail: LessonWithMedia | null   // fetched when lesson selected
 ```
 
 **Optimistic mutations:** Local state updates immediately; API fires in background; on error, revert and show toast.
 
+**`orderIndex` on create:** When creating any new record, the API assigns `(MAX existing orderIndex) + 1` within the parent scope. Implementation uses `findFirst({ orderBy: { orderIndex: 'desc' } })` and takes `.orderIndex + 1`, defaulting to `0` if no records exist yet. Scope per type: Module → global (all modules); SubModule → within `moduleId`; Lesson → within `subModuleId`.
+
 ---
 
 ## 6. API Routes
 
+### Authentication requirement
+**All API routes** (new and modified) must call `const session = await auth()` and return 401 if no session, 403 if the role is not EDUCATOR or ADMIN. This applies without exception.
+
 ### Existing — modified
 
-| Route | Change |
+| Route | Required change |
 |---|---|
-| `GET /api/modules` | Add `?all=true` param → skip `isPublished` filter (auth-gated to EDUCATOR/ADMIN) |
-| `POST /api/modules` | Add POST handler — create module with slug |
-| `GET /api/lessons/[id]` | Already exists — no change needed (fetches by slug currently, change to fetch by DB id) |
+| `GET /api/modules` | Add `?all=true` param → skip `isPublished` filter. Gate: only EDUCATOR/ADMIN may use `all=true`. |
+| `POST /api/modules` | Add POST handler to existing route file — create module with auto-slug and `orderIndex = MAX(Module.orderIndex across all modules) + 1` (global scope). |
+| `GET /api/lessons/[id]` | **No change needed.** Route stays as `where: { slug: id }`. `LessonEditor` passes `lesson.slug` (available in tree state), not the DB uuid. |
 
 ### New routes
 
-| Route | Handler |
+| Route | Body / Behaviour |
 |---|---|
-| `POST /api/sub-modules` | Create sub-module: `{ title, moduleId }` → auto-slug, return created record |
-| `PATCH /api/sub-modules/[id]` | Rename: `{ title }` → update title (and slug) |
-| `DELETE /api/sub-modules/[id]` | Delete — guard: reject if sub-module has lessons |
-| `POST /api/lessons` | Create lesson: `{ wordText, subModuleId }` → auto-slug |
-| `PATCH /api/lessons/[id]` | Update: `{ wordText }` |
-| `DELETE /api/lessons/[id]` | Delete lesson and all associated LessonMedia + MediaAsset records |
+| `POST /api/sub-modules` | `{ title, moduleId }` → auto-slug, `orderIndex = MAX + 1` within module, return created record |
+| `PATCH /api/sub-modules/[id]` | `{ title }` → update title and re-generate slug |
+| `DELETE /api/sub-modules/[id]` | Guard: return 409 if sub-module has any lessons. Otherwise delete. |
+| `POST /api/lessons` | `{ wordText, subModuleId }` → auto-slug, `orderIndex = MAX + 1` within sub-module |
+| `PATCH /api/lessons/[id]` | `{ wordText }` → update lesson; also update slug if wordText changed |
+| `DELETE /api/lessons/[id]` | Delete `LessonMedia` join rows first, then delete `MediaAsset` records **only if no other `LessonMedia` rows reference them**, then delete `Lesson`. |
 
 ### Slug generation (server-side)
 ```ts
 function toSlug(text: string): string {
   return text.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
 }
-// Uniqueness: append -2, -3 etc. if slug already exists
+// Uniqueness: attempt insert; on unique constraint violation, append -2, -3, etc.
 ```
+
+### API response envelope
+All routes return `{ success: true, data: <record> }` on success, consistent with existing module/lesson routes.
 
 ---
 
@@ -162,31 +191,32 @@ function toSlug(text: string): string {
 - **File icon**: lighter purple (`text-[var(--alya-purple-mid)]`)
 - **Context menu**: `rounded-xl shadow-lg border border-[var(--alya-purple-light)] bg-white`
 - **Panel cards**: white, `rounded-2xl border border-[var(--alya-purple-light)] shadow-sm p-5`
-- **Language pills**: same style as existing role pills
+- **Language pills**: same style as existing role badge pills
 
 ---
 
 ## 8. Protected Access
 
-The existing `app/(dashboard)/educator/layout.tsx` already enforces EDUCATOR role. ADMIN access requires no additional layout — they access educator routes directly (already handled by auth).
+**Prerequisite (see Section 3):** Fix educator layout to allow ADMIN through.
 
-For ADMIN role to access `/educator/lessons`, a minor adjustment: the educator layout currently redirects non-EDUCATOR roles. We need to allow ADMIN through as well.
+All API routes independently verify session and role (see Section 6). Layout-level redirect is a navigation convenience only, not a security boundary.
 
 ---
 
 ## 9. Error Handling
 
-- **Delete with children**: SubModule delete API returns 409; UI shows inline error "Remove all lessons first"
+- **Delete submodule with lessons**: API returns 409; UI shows inline error "Remove all lessons first"
+- **Delete lesson**: cascades safely — only orphaned `MediaAsset` records are deleted (Section 6)
 - **Duplicate slug**: API returns 409; UI shows "A lesson with that name already exists"
 - **Upload failure**: Show inline error per panel with retry button
-- **Network errors on tree mutations**: Revert optimistic update, show toast
+- **Network errors on tree mutations**: Revert optimistic update, show toast notification
 
 ---
 
 ## 10. Out of Scope (MVP)
 
-- Drag-and-drop reordering
+- Drag-and-drop reordering (orderIndex write via drag)
 - Publish/unpublish toggle in the explorer
 - Multi-select for bulk delete
 - Lesson duplication
-- Full multi-language translation UI (language selector present, but TA/HI text save is deferred)
+- TA/HI text translation editing (`TextPanel` shows placeholder for non-EN languages)
