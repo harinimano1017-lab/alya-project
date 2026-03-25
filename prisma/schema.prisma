@@ -37,6 +37,7 @@ model User {
   authProviderId String   @unique
   email          String   @unique
   name           String
+  password       String?
   role           UserRole @default(PARENT)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

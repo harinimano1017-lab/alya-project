@@ -14,7 +14,7 @@ const modules = [
 export default function HomePage() {
   const [activeLanguage, setActiveLanguage] = useState('English')
   const router = useRouter()
-  const languages = ['English', 'Tamil', 'Hindi']
+  const languages = ['English', 'Tamil']
 
   return (
     <div style={{
@@ -182,7 +182,7 @@ export default function HomePage() {
                 </p>
 
                 <div className="progress-bar" style={{ marginTop: 12 }}>
-                  <div className="progress-fill" style={{ width: `${Math.random() * 60 + 10}%` }} />
+                 <div className="progress-fill" style={{ width: '40%' }} />
                 </div>
 
                 <div className="start-text">

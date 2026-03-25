@@ -26,7 +26,7 @@ Module         → top-level collapsible section (e.g. "Animals")
 **Key fields:**
 - `Module.slug`, `SubModule.slug`, `Lesson.slug` — used for S3 key construction and routing
 - `LessonMedia.panelType` — `LIP_READING_VIDEO | CONCEPT_IMAGE | SIGN_LANGUAGE_VIDEO`
-- `LessonMedia.language` — `EN | TA | HI`
+- `LessonMedia.language` — `EN | TA`
 - `MediaAsset.mimeType` — `video/youtube` for YouTube links, `image/*` for R2 uploads
 
 ---
@@ -83,7 +83,7 @@ if (session.user.role !== 'EDUCATOR' && session.user.role !== 'ADMIN') redirect(
 - Shown when a lesson is selected; empty state otherwise
 - On lesson selection: fetches `GET /api/lessons/${lesson.slug}` — uses the lesson's **slug** (already in tree data), so the existing route (`where: { slug: id }`) requires no change
 - Shows lesson name as editable `<input>` at top
-- Language selector (EN / TA / HI) pill tabs
+- Language selector (EN / TA) pill tabs
 - Renders four `<PanelCard>` sections: A, B, C, D
 - Each panel card has a title, status indicator (filled/empty), and the panel component
 
@@ -135,7 +135,7 @@ selectedLesson: {
 } | null
 renamingId: string | null          // ID of node currently being renamed
 contextMenu: { node: TreeNodeData; x: number; y: number } | null
-activeLanguage: 'EN' | 'TA' | 'HI'
+activeLanguage: 'EN' | 'TA'
 lessonDetail: LessonWithMedia | null   // fetched when lesson selected
 ```
 
