@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { LayoutDashboard, Users, BookOpen, BarChart3, Heart } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SignOutButton } from './SignOutButton'
-import type { UserRole } from '@prisma/client'
+type UserRole = 'PARENT' | 'CHILD' | 'EDUCATOR' | 'ADMIN'
 
 export interface SidebarUser {
   name: string

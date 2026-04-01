@@ -1,7 +1,7 @@
 'use client'
 
 import { useUserStore } from '@/store/userStore'
-import type { UserRole } from '@prisma/client'
+type UserRole = 'PARENT' | 'CHILD' | 'EDUCATOR' | 'ADMIN'
 
 interface RoleGuardProps {
   allow: UserRole[]
