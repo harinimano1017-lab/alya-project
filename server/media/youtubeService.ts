@@ -1,4 +1,5 @@
-import { LanguageCode, MediaType } from '@prisma/client'
+type MediaType = 'LIP_READING_VIDEO' | 'CONCEPT_IMAGE' | 'SIGN_LANGUAGE_VIDEO' | 'SIGN_LANGUAGE_IMAGE'
+type LanguageCode = 'EN' | 'TA'
 import { createMediaAsset, getMediaAssetByS3Key, linkMediaToLesson } from './mediaRepository'
 
 export function buildYouTubeEmbedUrl(videoId: string) {

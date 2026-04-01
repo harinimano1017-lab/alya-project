@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
-import { MediaType, LanguageCode } from '@prisma/client'
+type MediaType = 'LIP_READING_VIDEO' | 'CONCEPT_IMAGE' | 'SIGN_LANGUAGE_VIDEO' | 'SIGN_LANGUAGE_IMAGE'
+type LanguageCode = 'EN' | 'TA'
 
 export async function getMediaByLesson(lessonId: string, language: LanguageCode = 'EN') {
   return prisma.lessonMedia.findMany({
