@@ -3,33 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
-enum UserRole {
-  CHILD
-  PARENT
-  EDUCATOR
-  ADMIN
-}
-
-enum MediaType {
-  LIP_READING_VIDEO
-  CONCEPT_IMAGE
-  SIGN_LANGUAGE_VIDEO
-}
-
-enum LanguageCode {
-  EN
-  TA
-  HI
-}
-
-enum LessonStatus {
-  NOT_STARTED
-  IN_PROGRESS
-  COMPLETED
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model User {
@@ -38,7 +13,7 @@ model User {
   email          String   @unique
   name           String
   password       String?
-  role           UserRole @default(PARENT)
+  role           String   @default("PARENT") // ENUM workaround for SQLite: CHILD, PARENT, EDUCATOR, ADMIN
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -51,7 +26,7 @@ model ChildProfile {
   name          String
   avatarUrl     String?
   dateOfBirth   DateTime?
-  preferredLang LanguageCode @default(EN)
+  preferredLang String       @default("EN") // ENUM workaround
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
@@ -80,10 +55,13 @@ model Module {
   slug        String    @unique
   title       String
   description String?
-  iconUrl     String?
-  orderIndex  Int       @default(0)
-  isPublished Boolean   @default(false)
-  createdAt   DateTime  @default(now())
+  iconUrl          String?
+  coverImgUrl      String?
+  previewVideoUrl  String?
+  orderIndex       Int       @default(0)
+  viewCount        Int       @default(0)
+  isPublished      Boolean   @default(false)
+  createdAt        DateTime  @default(now())
 
   subModules  SubModule[]
 }
@@ -125,14 +103,14 @@ model MediaAsset {
   id             String     @id @default(uuid())
   s3Key          String     @unique
   cdnUrl         String
-  mediaType      MediaType
+  mediaType      String     // LIP_READING_VIDEO, CONCEPT_IMAGE, SIGN_LANGUAGE_VIDEO
   mimeType       String
   fileSizeBytes  BigInt?
   durationSeconds Float?
   widthPx        Int?
   heightPx       Int?
   altText        String?
-  language       LanguageCode @default(EN)
+  language       String     @default("EN")
   uploadedById   String?
   createdAt      DateTime   @default(now())
 
@@ -143,8 +121,8 @@ model LessonMedia {
   id           String       @id @default(uuid())
   lessonId     String
   mediaAssetId String
-  panelType    MediaType
-  language     LanguageCode @default(EN)
+  panelType    String       // LIP_READING_VIDEO, CONCEPT_IMAGE, SIGN_LANGUAGE_VIDEO
+  language     String       @default("EN")
 
   lesson       Lesson       @relation(fields: [lessonId], references: [id])
   mediaAsset   MediaAsset   @relation(fields: [mediaAssetId], references: [id])
@@ -156,7 +134,7 @@ model LessonProgress {
   id              String       @id @default(uuid())
   childProfileId  String
   lessonId        String
-  status          LessonStatus @default(NOT_STARTED)
+  status          String       @default("NOT_STARTED") // NOT_STARTED, IN_PROGRESS, COMPLETED
   completedAt     DateTime?
   totalViewTimeSec Int         @default(0)
   viewCount       Int          @default(0)
@@ -173,7 +151,7 @@ model PanelTimeLog {
   id              String       @id @default(uuid())
   childProfileId  String
   lessonId        String
-  panelType       MediaType
+  panelType       String
   durationSeconds Int
   sessionDate     DateTime     @default(now())
 
@@ -197,7 +175,7 @@ model QuizAttempt {
 model LessonTranslation {
   id        String       @id @default(uuid())
   lessonId  String
-  language  LanguageCode
+  language  String
   wordText  String
   createdAt DateTime     @default(now())
 

@@ -62,15 +62,15 @@ export default async function EducatorPage() {
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <a
-            href="/educator/lessons"
+            href="/educator/modules"
             className="flex items-center gap-4 rounded-2xl border border-[var(--alya-purple-light)] bg-white p-5 shadow-sm transition hover:border-[var(--alya-purple)] hover:shadow-md"
           >
             <div className="rounded-xl bg-[var(--alya-purple-light)] p-3 text-[var(--alya-purple)]">
-              <BookOpen className="h-5 w-5" />
+              <Layers className="h-5 w-5" />
             </div>
             <div>
-              <p className="font-medium text-[var(--alya-purple-dark)]">Manage Lessons</p>
-              <p className="text-sm text-gray-500">Add, edit, or publish lessons</p>
+              <p className="font-medium text-[var(--alya-purple-dark)]">Manage Modules</p>
+              <p className="text-sm text-gray-500">Add, edit, or publish modules & lessons</p>
             </div>
           </a>
           <a

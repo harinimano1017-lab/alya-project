@@ -2,6 +2,7 @@ export type MediaType =
   | 'LIP_READING_VIDEO'
   | 'CONCEPT_IMAGE'
   | 'SIGN_LANGUAGE_VIDEO'
+  | 'SIGN_LANGUAGE_IMAGE'
 
 export type MediaAsset = {
   id: string

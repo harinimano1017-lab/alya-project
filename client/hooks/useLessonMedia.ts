@@ -29,7 +29,7 @@ export function useLessonMedia(slug: string) {
     : null
 
   const signLangUrl = lesson
-    ? getMediaUrl(lesson.media, 'SIGN_LANGUAGE_VIDEO')
+    ? getMediaUrl(lesson.media, 'SIGN_LANGUAGE_VIDEO') || getMediaUrl(lesson.media, 'SIGN_LANGUAGE_IMAGE')
     : null
 
   return {

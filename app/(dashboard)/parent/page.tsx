@@ -19,6 +19,14 @@ export default async function ParentPage() {
     orderBy: { createdAt: 'asc' },
   })
 
+  const previewModules = await prisma.module.findMany({
+    where: { 
+      isPublished: true,
+      previewVideoUrl: { not: null }
+    },
+    orderBy: { createdAt: 'desc' }
+  })
+
   const totalCompleted = children.reduce(
     (sum, child) => sum + child.progress.filter((p) => p.status === 'COMPLETED').length,
     0
@@ -133,6 +141,53 @@ export default async function ParentPage() {
           </div>
         )}
       </div>
+
+      {/* Curriculum Previews */}
+      {previewModules.length > 0 && (
+        <div className="mt-12 mb-8">
+          <div className="mb-6">
+            <h2 className="text-xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--alya-purple-dark)' }}>
+              Curriculum Previews
+            </h2>
+            <p className="mt-1 text-sm text-gray-500">
+              Watch overviews of the modules your children are currently learning.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {previewModules.map((mod) => {
+              // Convert any youtube link to an embed link
+              let embedUrl = mod.previewVideoUrl || ''
+              if (!embedUrl.includes('youtube.com/embed/')) {
+                const match = embedUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/)
+                if (match) embedUrl = `https://www.youtube.com/embed/${match[1]}`
+              }
+
+              return (
+                <div key={mod.id} className="rounded-2xl border border-[var(--alya-purple-light)] bg-white overflow-hidden shadow-sm flex flex-col">
+                  <div className="aspect-video w-full bg-black relative">
+                    <iframe
+                      src={embedUrl}
+                      className="absolute inset-0 w-full h-full border-none"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                  <div className="p-4 flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xl">{mod.iconUrl || '📚'}</span>
+                      <h3 className="font-bold text-[var(--alya-purple-dark)]">{mod.title}</h3>
+                    </div>
+                    {mod.description && (
+                      <p className="text-sm text-gray-500 line-clamp-2">{mod.description}</p>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

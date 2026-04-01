@@ -12,8 +12,8 @@ function getRoleRedirect(role: UserRole): string {
   switch (role) {
     case 'ADMIN':     return '/admin'
     case 'EDUCATOR':  return '/educator'
-    case 'PARENT':    return '/parent'
-    case 'CHILD':     return '/library'
+    case 'PARENT':    return '/'
+    case 'CHILD':     return '/'
     default:          return '/'
   }
 }

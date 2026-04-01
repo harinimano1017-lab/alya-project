@@ -17,7 +17,7 @@ export default async function ChildProgressPage({
     where: { id: childId, userId: session!.user.id },
     include: {
       progress: {
-        include: { lesson: { select: { wordText: true, slug: true } } },
+        include: { lesson: { include: { media: { include: { mediaAsset: true } } } } },
         orderBy: { updatedAt: 'desc' },
       },
     },
@@ -83,26 +83,58 @@ export default async function ChildProgressPage({
           child.progress.map((p) => (
             <div
               key={p.id}
-              className="flex items-center justify-between rounded-2xl border border-[var(--alya-purple-light)] bg-white px-5 py-4 shadow-sm"
+              className="rounded-2xl border border-[var(--alya-purple-light)] bg-white overflow-hidden shadow-sm"
             >
-              <span className="font-medium text-[var(--alya-purple-dark)]">
-                {p.lesson.wordText}
-              </span>
-              <span
-                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                  p.status === 'COMPLETED'
-                    ? 'bg-emerald-50 text-emerald-600'
+              <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--alya-purple-light)]/50">
+                <span className="font-bold text-lg text-[var(--alya-purple-dark)]" style={{ fontFamily: 'var(--font-display)' }}>
+                  {p.lesson.wordText}
+                </span>
+                <span
+                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    p.status === 'COMPLETED'
+                      ? 'bg-emerald-50 text-emerald-600'
+                      : p.status === 'IN_PROGRESS'
+                      ? 'bg-[var(--alya-purple-light)] text-[var(--alya-purple)]'
+                      : 'bg-gray-100 text-gray-500'
+                  }`}
+                >
+                  {p.status === 'COMPLETED'
+                    ? 'Done'
                     : p.status === 'IN_PROGRESS'
-                    ? 'bg-[var(--alya-purple-light)] text-[var(--alya-purple)]'
-                    : 'bg-gray-100 text-gray-500'
-                }`}
-              >
-                {p.status === 'COMPLETED'
-                  ? 'Done'
-                  : p.status === 'IN_PROGRESS'
-                  ? 'In progress'
-                  : 'Not started'}
-              </span>
+                    ? 'In progress'
+                    : 'Not started'}
+                </span>
+              </div>
+              <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50/50">
+                {(() => {
+                  const lip = p.lesson.media.find((m: any) => m.panelType === 'LIP_READING_VIDEO')?.mediaAsset?.cdnUrl;
+                  const sign = p.lesson.media.find((m: any) => m.panelType === 'SIGN_LANGUAGE_VIDEO')?.mediaAsset?.cdnUrl;
+                  
+                  return (
+                    <>
+                      {lip && (
+                        <div className="flex flex-col gap-1.5">
+                          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Lip Reading</span>
+                          <div className="aspect-video rounded-xl overflow-hidden border border-[var(--alya-purple-light)]">
+                            <iframe src={lip} className="w-full h-full border-none" allow="accelerometer; autoplay; encrypted-media; gyroscope;" allowFullScreen></iframe>
+                          </div>
+                        </div>
+                      )}
+                      {sign && (
+                        <div className="flex flex-col gap-1.5">
+                          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Sign Language</span>
+                          <div className="aspect-video rounded-xl overflow-hidden border border-[var(--alya-purple-light)]">
+                            <iframe src={sign} className="w-full h-full border-none" allow="accelerometer; autoplay; encrypted-media; gyroscope;" allowFullScreen></iframe>
+                          </div>
+                        </div>
+                      )}
+                      {!lip && !sign && (
+                        <p className="text-xs text-gray-400 col-span-2 py-2">No videos available for this lesson.</p>
+                      )}
+                    </>
+                  )
+                })()}
+              </div>
             </div>
           ))
         )}

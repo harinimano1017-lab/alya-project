@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
-import { UserRole } from '@prisma/client'
 
-const ALLOWED_SELF_REGISTER_ROLES: UserRole[] = ['PARENT', 'EDUCATOR']
+const ALLOWED_SELF_REGISTER_ROLES: string[] = ['PARENT', 'EDUCATOR']
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,7 +15,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const userRole: UserRole = ALLOWED_SELF_REGISTER_ROLES.includes(role)
+    const userRole: string = ALLOWED_SELF_REGISTER_ROLES.includes(role)
       ? role
       : 'PARENT'
 

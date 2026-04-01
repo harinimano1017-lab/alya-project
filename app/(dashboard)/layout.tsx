@@ -1,9 +1,8 @@
 import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
-import type { UserRole } from '@prisma/client'
 
 // Role → allowed path prefixes
-const ROLE_PATHS: Record<UserRole, string[]> = {
+const ROLE_PATHS: Record<string, string[]> = {
   ADMIN:    ['/admin'],
   EDUCATOR: ['/educator'],
   PARENT:   ['/parent'],

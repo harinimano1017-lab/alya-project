@@ -1,20 +1,48 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { StudentNavbar } from '@/components/StudentNavbar'
+import { StudentBottomNav } from '@/components/StudentBottomNav'
 
-const modules = [
-  { id: 1, slug: 'animals', title: 'Animals', lessons: 12, icon: '🐾', color: '#E8F5E9', iconBg: '#C8E6C9' },
-  { id: 2, slug: 'fruits', title: 'Fruits', lessons: 12, icon: '🍊', color: '#FFF3E0', iconBg: '#FFE0B2' },
-  { id: 3, slug: 'vegetables', title: 'Vegetables', lessons: 12, icon: '🥦', color: '#E0F2F1', iconBg: '#B2DFDB' },
-  { id: 4, slug: 'emotions', title: 'Emotions', lessons: 10, icon: '😊', color: '#FCE4EC', iconBg: '#F8BBD0' },
-  { id: 5, slug: 'actions', title: 'Actions', lessons: 10, icon: '🏃', color: '#E8EAF6', iconBg: '#C5CAE9' },
-  { id: 6, slug: 'objects', title: 'Objects', lessons: 14, icon: '🏠', color: '#E3F2FD', iconBg: '#BBDEFB' },
+const themeColors = [
+  { color: '#E8F5E9', iconBg: '#C8E6C9' },
+  { color: '#FFF3E0', iconBg: '#FFE0B2' },
+  { color: '#E0F2F1', iconBg: '#B2DFDB' },
+  { color: '#FCE4EC', iconBg: '#F8BBD0' },
+  { color: '#E8EAF6', iconBg: '#C5CAE9' },
+  { color: '#E3F2FD', iconBg: '#BBDEFB' },
 ]
 
 export default function HomePage() {
   const [activeLanguage, setActiveLanguage] = useState('English')
+  const [modules, setModules] = useState<any[]>([])
   const router = useRouter()
   const languages = ['English', 'Tamil']
+
+  useEffect(() => {
+    fetch('/api/modules')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          const formatted = data.data.map((m: any, i: number) => {
+            const theme = themeColors[i % themeColors.length]
+            const lessonCount = m.subModules.reduce((acc: number, sub: any) => acc + sub.lessons.length, 0)
+            return {
+              id: m.id,
+              slug: m.slug,
+              title: m.title,
+              lessons: lessonCount,
+              icon: m.iconUrl || '📚',
+              cover: m.coverImgUrl,
+              color: theme.color,
+              iconBg: theme.iconBg
+            }
+          })
+          setModules(formatted)
+        }
+      })
+  }, [])
 
   return (
     <div style={{
@@ -25,15 +53,13 @@ export default function HomePage() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Fraunces:wght@600;700&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        .nav-link { color: #444; font-size: 14px; font-weight: 500; cursor: pointer; text-decoration: none; transition: color 0.2s; }
-        .nav-link:hover { color: #6B4FA0; }
         .lang-btn { padding: 8px 20px; border-radius: 999px; border: 1.5px solid #E0D9F0; background: transparent; font-size: 14px; font-weight: 500; cursor: pointer; color: #555; transition: all 0.2s; }
         .lang-btn:hover { border-color: #6B4FA0; color: #6B4FA0; }
         .lang-btn.active { background: #6B4FA0; color: white; border-color: #6B4FA0; }
-        .module-card { background: white; border-radius: 20px; padding: 28px; cursor: pointer; transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1); border: 1.5px solid #F0EBF8; position: relative; overflow: hidden; }
+        .module-card { background: white; border-radius: 20px; cursor: pointer; transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1); border: 1.5px solid #F0EBF8; position: relative; overflow: hidden; display: flex; flex-direction: column; }
         .module-card:hover { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(107,79,160,0.12); border-color: #C9B8E8; }
-        .module-card::before { content: ''; position: absolute; top: 0; right: 0; width: 80px; height: 80px; border-radius: 0 20px 0 80px; opacity: 0.4; transition: opacity 0.25s; }
-        .module-card:hover::before { opacity: 0.7; }
+        .module-card-bg::before { content: ''; position: absolute; top: 0; right: 0; width: 80px; height: 80px; border-radius: 0 20px 0 80px; opacity: 0.4; transition: opacity 0.25s; }
+        .module-card:hover .module-card-bg::before { opacity: 0.7; }
         .start-text { font-size: 12px; font-weight: 600; color: #6B4FA0; letter-spacing: 0.05em; text-transform: uppercase; display: flex; align-items: center; gap: 4px; margin-top: 16px; }
         .hero-card { background: linear-gradient(135deg, #6B4FA0 0%, #9B72CF 100%); border-radius: 28px; padding: 48px; color: white; position: relative; overflow: hidden; }
         .floating-badge { position: absolute; background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); border-radius: 16px; padding: 12px 18px; font-size: 13px; font-weight: 500; color: white; }
@@ -50,31 +76,11 @@ export default function HomePage() {
         .fade-up-2 { animation: fadeUp 0.5s 0.2s ease both; }
         .fade-up-3 { animation: fadeUp 0.5s 0.3s ease both; }
       `}</style>
-
+      
       {/* Navbar */}
-      <nav style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 40px', height: '64px', background: 'rgba(247,245,242,0.9)',
-        backdropFilter: 'blur(12px)', position: 'sticky', top: 0, zIndex: 100,
-        borderBottom: '1px solid #EDE7F6'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: 32, height: 32, background: 'linear-gradient(135deg, #6B4FA0, #9B72CF)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>A</span>
-          </div>
-          <span style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 700, color: '#3B1F6B', letterSpacing: '-0.02em' }}>Alya</span>
-        </div>
-        <div style={{ display: 'flex', gap: '32px' }}>
-          <a className="nav-link" style={{ color: '#6B4FA0', borderBottom: '2px solid #6B4FA0', paddingBottom: 2 }}>Explore</a>
-          <a className="nav-link">My Path</a>
-          <a className="nav-link">Library</a>
-        </div>
-        <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg, #EDE7F6, #D1C4E9)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '2px solid #C9B8E8' }}>
-          <span style={{ fontSize: 18 }}>👤</span>
-        </div>
-      </nav>
+      <StudentNavbar />
 
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 24px' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 24px 100px' }}>
 
         {/* Hero Section */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 24, marginBottom: 48 }} className="fade-up">
@@ -163,33 +169,61 @@ export default function HomePage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
             {modules.map((mod, i) => (
               <div key={mod.id} className="module-card fade-up"
-                style={{ animationDelay: `${i * 0.07}s` }}
+                style={{ animationDelay: `${i * 0.07}s`, padding: 0 }}
                 onClick={() => router.push(`/module/${mod.slug}`)}>
-                <div style={{ '::before': { background: mod.color } } as any} />
+                
+                {mod.cover ? (
+                  <>
+                    <div style={{ width: '100%', height: 160, backgroundImage: `url(${mod.cover})`, backgroundSize: 'cover', backgroundPosition: 'center', borderBottom: '1.5px solid #F0EBF8' }} />
+                    <div style={{ padding: 24 }}>
+                      <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1A0A2E', marginBottom: 4, fontFamily: "'Fraunces', serif" }}>
+                        {mod.title}
+                      </h3>
+                      <p style={{ fontSize: 12, color: '#888', marginBottom: 8 }}>
+                        {mod.lessons} lessons · Signs + Lip reading
+                      </p>
+                      <div className="start-text">
+                        Start <span>→</span>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ padding: 28, position: 'relative', height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <div className="module-card-bg" style={{ '::before': { background: mod.color } } as any} />
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, position: 'relative', zIndex: 1 }}>
+                      <div style={{ width: 52, height: 52, borderRadius: 16, background: mod.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26 }}>
+                        {mod.icon}
+                      </div>
+                      <div style={{ width: 28, height: 28, borderRadius: 8, background: '#F7F5F2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>→</div>
+                    </div>
 
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
-                  <div style={{ width: 52, height: 52, borderRadius: 16, background: mod.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26 }}>
-                    {mod.icon}
+                    <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1A0A2E', marginBottom: 4, fontFamily: "'Fraunces', serif", position: 'relative', zIndex: 1 }}>
+                      {mod.title}
+                    </h3>
+                    <p style={{ fontSize: 12, color: '#888', marginBottom: 4, position: 'relative', zIndex: 1 }}>
+                      {mod.lessons} lessons · Signs + Lip reading
+                    </p>
+
+                    <div className="progress-bar" style={{ marginTop: 'auto', marginBottom: 12, position: 'relative', zIndex: 1 }}>
+                     <div className="progress-fill" style={{ width: '40%' }} />
+                    </div>
+
+                    <div className="start-text" style={{ position: 'relative', zIndex: 1 }}>
+                      Start <span>→</span>
+                    </div>
                   </div>
-                  <div style={{ width: 28, height: 28, borderRadius: 8, background: '#F7F5F2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>→</div>
-                </div>
-
-                <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1A0A2E', marginBottom: 4, fontFamily: "'Fraunces', serif" }}>
-                  {mod.title}
-                </h3>
-                <p style={{ fontSize: 12, color: '#888', marginBottom: 4 }}>
-                  {mod.lessons} lessons · Signs + Lip reading
-                </p>
-
-                <div className="progress-bar" style={{ marginTop: 12 }}>
-                 <div className="progress-fill" style={{ width: '40%' }} />
-                </div>
-
-                <div className="start-text">
-                  Start <span>→</span>
-                </div>
+                )}
               </div>
             ))}
+            {modules.length === 0 && (
+              <div style={{ gridColumn: '1 / -1', padding: '60px', textAlign: 'center', background: 'white', borderRadius: 24, border: '1.5px dashed #C9B8E8' }}>
+                <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, color: '#1A0A2E' }}>Welcome to Alya!</h3>
+                <p style={{ color: '#888', marginTop: 8, fontSize: 15 }}>No modules are published yet.</p>
+                <div style={{ marginTop: 24 }}>
+                  <Link href="/login" style={{ background: 'linear-gradient(135deg, #6B4FA0, #9B72CF)', color: 'white', padding: '12px 24px', borderRadius: 999, fontWeight: 600, fontSize: 14, textDecoration: 'none' }}>Login as Educator to Create Content →</Link>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -203,11 +237,13 @@ export default function HomePage() {
               Alya helps deaf and non-verbal children communicate through multimodal learning.
             </p>
           </div>
-          <button style={{ background: 'linear-gradient(135deg, #6B4FA0, #9B72CF)', color: 'white', border: 'none', borderRadius: 14, padding: '14px 28px', fontSize: 15, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+          <button onClick={() => router.push('/library')} style={{ background: 'linear-gradient(135deg, #6B4FA0, #9B72CF)', color: 'white', border: 'none', borderRadius: 14, padding: '14px 28px', fontSize: 15, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
             Start Learning →
           </button>
         </div>
       </div>
+      
+      <StudentBottomNav activeTab="Home" />
     </div>
   )
 }
