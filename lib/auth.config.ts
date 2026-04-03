@@ -8,6 +8,7 @@ export const authConfig = {
   },
   session: {
     strategy: 'jwt' as const,
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
@@ -30,6 +31,20 @@ export const authConfig = {
       if (isProtected && !isLoggedIn) return false
 
       return true
+    },
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id as string
+        token.role = (user as any).role
+      }
+      return token
+    },
+    async session({ session, token }) {
+      if (token) {
+        session.user.id = token.id as string
+        session.user.role = (token as any).role
+      }
+      return session
     },
   },
   providers: [], // Populated in auth.ts (bcrypt/Prisma not edge-safe)

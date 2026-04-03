@@ -64,7 +64,7 @@ export function RegisterForm() {
       return
     }
 
-    router.push(role === 'EDUCATOR' ? '/educator' : '/parent')
+    router.push(role === 'EDUCATOR' ? '/educator' : '/')
     router.refresh()
   }
 
