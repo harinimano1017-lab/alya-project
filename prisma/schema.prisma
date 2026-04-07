@@ -8,13 +8,20 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+enum Role {
+  CHILD
+  PARENT
+  EDUCATOR
+  ADMIN
+}
+
 model User {
   id             String   @id @default(uuid())
   authProviderId String   @unique
   email          String   @unique
   name           String
   password       String?
-  role           String   @default("PARENT") // ENUM workaround for SQLite: CHILD, PARENT, EDUCATOR, ADMIN
+  role           Role     @default(PARENT)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

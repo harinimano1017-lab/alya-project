@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const userRole: string = ALLOWED_SELF_REGISTER_ROLES.includes(role)
+    const userRole: any = ALLOWED_SELF_REGISTER_ROLES.includes(role)
       ? role
       : 'PARENT'
 
