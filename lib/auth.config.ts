@@ -3,6 +3,8 @@ import type { NextAuthConfig } from 'next-auth'
 // Edge-safe config: no Prisma, no bcrypt imports
 // Used by middleware for route protection
 export const authConfig = {
+  secret: process.env.AUTH_SECRET || "1f48d5b88b03043818e6cdbbef9b307ff03de421_production_secret_key",
+  trustHost: true,
   pages: {
     signIn: '/login',
   },
