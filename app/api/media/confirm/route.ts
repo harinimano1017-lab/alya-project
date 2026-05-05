@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
       mimeType,
       language: language ?? 'EN',
       altText,
-      fileSizeBytes: fileSizeBytes ? BigInt(fileSizeBytes) : undefined,
+      fileSizeBytes: fileSizeBytes ? parseInt(fileSizeBytes, 10) : undefined,
       durationSeconds,
       widthPx,
       heightPx,

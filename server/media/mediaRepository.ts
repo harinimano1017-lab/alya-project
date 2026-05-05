@@ -22,7 +22,7 @@ export async function createMediaAsset(data: {
   mimeType: string
   language?: LanguageCode
   altText?: string
-  fileSizeBytes?: bigint
+  fileSizeBytes?: number
   durationSeconds?: number
   widthPx?: number
   heightPx?: number
