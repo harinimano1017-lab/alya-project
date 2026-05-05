@@ -3,25 +3,16 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
-
-enum Role {
-  CHILD
-  PARENT
-  EDUCATOR
-  ADMIN
-}
-
 model User {
   id             String   @id @default(uuid())
   authProviderId String   @unique
   email          String   @unique
   name           String
   password       String?
-  role           Role     @default(PARENT)
+  role           String   @default("PARENT")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -113,7 +104,7 @@ model MediaAsset {
   cdnUrl         String
   mediaType      String     // LIP_READING_VIDEO, CONCEPT_IMAGE, SIGN_LANGUAGE_VIDEO
   mimeType       String
-  fileSizeBytes  BigInt?
+  fileSizeBytes  Int?
   durationSeconds Float?
   widthPx        Int?
   heightPx       Int?

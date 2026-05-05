@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useLessonMedia } from '@/client/hooks/useLessonMedia'
 import { ArrowLeft, ArrowRight, Image as ImageIcon, Hand, Loader2 } from 'lucide-react'
-
+import { AIChat } from '@/components/ai-chat'
 export default function LessonPage() {
   const params = useParams()
   const router = useRouter()
@@ -53,7 +53,8 @@ export default function LessonPage() {
   }
 
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-[#150a21] font-sans selection:bg-[var(--alya-purple)] selection:text-white pb-2 px-2">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#150a21] font-sans selection:bg-[var(--alya-purple)] selection:text-white">
+      <div className="flex-1 flex flex-col h-full overflow-hidden pb-2 px-2">
       
       {/* HEADER BAR */}
       <header className="flex h-16 shrink-0 items-center justify-between px-4">
@@ -165,6 +166,8 @@ export default function LessonPage() {
         </div>
 
       </div>
+      </div>
+      <AIChat />
     </div>
   )
 }
